@@ -1,2 +1,3 @@
 Risk score printed to user and vendors that say file is malicious
+Check File Size
 Command line flags for user
