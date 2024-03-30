@@ -22,8 +22,18 @@ def get_hash(file):
 def main():
     file = sys.argv[1]
     file_hash = get_hash(file)
-    report = get_request(file_hash)
-    print(report)
+
+    print("Hash: " + file_hash + "\n\n")
+
+    url = "https://www.virustotal.com/api/v3/files/" + file_hash
+
+    headers = {"accept": "application/json", 'x-apikey': ""}
+
+    response = requests.get(url, headers=headers)
+    print(response.text)
+
+    #report = get_request(file_hash)
+    #print(report)
 
 
 if __name__ == "__main__":
