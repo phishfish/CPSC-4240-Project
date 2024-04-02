@@ -33,6 +33,9 @@ def uploadFile(fileName):
         elif response.status_code == 429:
             print("Rate limit exceeded. Waiting...")
             time.sleep(60)
+        elip response.status_code == 401:
+            print("Failed to upload file. Did you include an API key?")
+            break
         else:
             print(f"Failed to upload file. Error: {response.status_code}")
             break  
@@ -62,7 +65,7 @@ def main():
 
     #Uploads the file and returns a response (aka, has this been uploaded already?)
     response = uploadFile(file)
-    file_id = response.json().get("data").get("id"))
+    file_id = response.json().get("data").get("id")
 
     if response == NOT_FOUND:
         ...
