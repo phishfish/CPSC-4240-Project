@@ -4,3 +4,4 @@ Command line flags for user
 1. "-h" manpage
 2. "-i" analyze IP
 3. "-f" pipe into a different files
+Possibly check the IPs a file reaches out to and add to risk score based on the risk score given back by IPs communicated to
