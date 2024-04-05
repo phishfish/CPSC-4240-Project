@@ -3,7 +3,7 @@ import hashlib
 import requests
 
 # WARNING: DO NOT PUSH YOUR APIKEY HERE
-API_KEY = '5a6524a913362c4c0b91a05e35365b32bf45ce25a86a827cb97e422d8ba66275'
+API_KEY = ''
 READ_SIZE = 65536
 
 def get_request(calc_hash):
