@@ -3,8 +3,9 @@ import hashlib
 import requests
 
 # WARNING: DO NOT PUSH YOUR APIKEY HERE
-API_KEY = 'your_api_key_here'
+API_KEY = ''
 READ_SIZE = 65536
+NOT_FOUND = 404
 
 def get_request(calc_hash):
     """
@@ -70,7 +71,7 @@ def uploadFile(fileName):
         elif response.status_code == 429:
             print("Rate limit exceeded. Waiting...")
             time.sleep(60)
-        elip response.status_code == 401:
+        elif response.status_code == 401:
             print("Failed to upload file. Did you include an API key?")
             break
         else:
@@ -102,7 +103,9 @@ def main():
 
     #Uploads the file and returns a response (aka, has this been uploaded already?)
     response = uploadFile(file)
-    file_id = response.json().get("data").get("id")
+    response = response.json()
+    file_id = response['data']['id']
+
 
     if response == NOT_FOUND:
         ...
