@@ -1,2 +1,6 @@
 Risk score printed to user and vendors that say file is malicious
+Check File Size
 Command line flags for user
+1. "-h" manpage
+2. "-i" analyze IP
+3. "-f" pipe into a different files
