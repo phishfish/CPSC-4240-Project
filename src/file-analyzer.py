@@ -56,6 +56,44 @@ def parse_report(report):
     for engine, result in detected_by.items():
         print(f"- {engine}: {result['result']}")
 
+#Uploading File to VirusTotal
+def uploadFile(fileName):
+    url = "https://www.virustotal.com/api/v3/files"
+    with open(fileName, "rb") as file:
+        contents = file.read()
+    files = {"file": (fileName, contents)}
+    headers =  {"accept": "application/json", 'x-apikey': API_KEY}
+    while True:
+        response = requests.post(url, headers=headers, files=files)
+        if response.status_code == 200:
+            break
+        elif response.status_code == 429:
+            print("Rate limit exceeded. Waiting...")
+            time.sleep(60)
+        elif response.status_code == 401:
+            print("Failed to upload file. Did you include an API key?")
+            break
+        else:
+            print(f"Failed to upload file. Error: {response.status_code}")
+            break  
+    return response
+
+#Print Analysis of File
+def fileAnalysis(file, file_hash):
+    hash_url = "https://www.virustotal.com/api/v3/files/" + file_hash
+    url = "https://www.virustotal.com/api/v3/analyses/" + file_ID
+    headers =  {"accept": "application/json", 'x-apikey': API_KEY}
+    response = requests.get(url, headers=headers)
+
+#Retrieving file report of the hashed file
+def retrieveReport(file):
+
+    file_hash = get_hash(file)
+    url = "https://www.virustotal.com/api/v3/files/" + file_hash
+    headers = {"accept": "application/json", 'x-apikey': API_KEY}
+    response = requests.get(url, headers=headers)
+    print(response.text)
+
 def main():
     if len(sys.argv) > 1 and sys.argv[1].startswith('-'):
         print("Detect malicious behavior in a file or an IP address")
@@ -66,13 +104,16 @@ def main():
     else:
         file_path = sys.argv[1]
         try:
-            file_hash = get_hash(file_path)
-            report = get_request(file_hash)
-            parse_report(report)
+#             file_hash = get_hash(file_path)
+#             report = get_request(file_hash)
+#             parse_report(report)
+            response = uploadFile(file)
+            response = response.json()
+            file_id = response['data']['id']
         except FileNotFoundError:
             print(f"Error: The file '{file_path}' was not found.")
         except Exception as e:
             print(f"An unexpected error occurred: {str(e)}")
-
+    
 if __name__ == "__main__":
     main()
