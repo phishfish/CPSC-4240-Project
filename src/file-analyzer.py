@@ -5,7 +5,6 @@ import requests
 # WARNING: DO NOT PUSH YOUR APIKEY HERE
 API_KEY = ''
 READ_SIZE = 65536
-NOT_FOUND = 404
 
 def get_request(calc_hash):
     """
@@ -95,33 +94,26 @@ def retrieveReport(file):
     response = requests.get(url, headers=headers)
     print(response.text)
 
-
-# Run program like "python3 file-analyzer.py <file>"
 def main():
-    #Saving File
-    file = sys.argv[1]
-
-    #Uploads the file and returns a response (aka, has this been uploaded already?)
-    response = uploadFile(file)
-    response = response.json()
-    file_id = response['data']['id']
-
-
-    if response == NOT_FOUND:
-        ...
-
-    #Option to Print out a File Analysis or File Report
-    #1. File Analysis - prints information on the analysis object (using id from uploadFile)
-    #2. File Report - retrieve detailed information about a file
-    # print('Enter Options "1" or "2": \n 1. File Analysis \n 2. File Report')
-    # answer = input()
-    # if answer == "1":
-    #     fileAnalysis(file_id)
-    # elif answer == "2":
-    #     retrieveReport(file)
-
-    #report = get_request(file_hash)
-    #print(report)
+    if len(sys.argv) > 1 and sys.argv[1].startswith('-'):
+        print("Detect malicious behavior in a file or an IP address")
+        print("-----------------------------------------------------------------------------")
+        print("-i --IP address          will check a malicious IP address instead of a file")
+        print("-f --another file        will print the output to another file")
+        sys.exit(1)
+    else:
+        file_path = sys.argv[1]
+        try:
+#             file_hash = get_hash(file_path)
+#             report = get_request(file_hash)
+#             parse_report(report)
+            response = uploadFile(file)
+            response = response.json()
+            file_id = response['data']['id']
+        except FileNotFoundError:
+            print(f"Error: The file '{file_path}' was not found.")
+        except Exception as e:
+            print(f"An unexpected error occurred: {str(e)}")
     
 if __name__ == "__main__":
     main()
