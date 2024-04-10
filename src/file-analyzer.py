@@ -1,4 +1,5 @@
 import sys
+import os
 import hashlib
 import requests
 
@@ -85,20 +86,28 @@ def uploadFile(fileName):
     return response
 
 #Print Analysis of File
-def fileAnalysis(file, file_hash):
-    hash_url = "https://www.virustotal.com/api/v3/files/" + file_hash
+def fileAnalysis(file_ID):
     url = "https://www.virustotal.com/api/v3/analyses/" + file_ID
     headers =  {"accept": "application/json", 'x-apikey': API_KEY}
-    response = requests.get(url, headers=headers)
+    while True:
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            break
+        elif response.status_code == 429:
+            print("Rate limit exceeded. Waiting...")
+            time.sleep(60)
+        else:
+            print(f"Failed to get file analysis. Error: {response.status_code}")
+            break
+    return response
 
 #Retrieving file report of the hashed file
 def retrieveReport(file):
-
     file_hash = get_hash(file)
     url = "https://www.virustotal.com/api/v3/files/" + file_hash
     headers = {"accept": "application/json", 'x-apikey': API_KEY}
     response = requests.get(url, headers=headers)
-    print(response.text)
+    return response
 
 def main():
     if len(sys.argv) > 1 and sys.argv[1].startswith('-'):
@@ -117,6 +126,8 @@ def main():
             response = uploadFile(file)
             response = response.json()
             file_id = response['data']['id']
+            analysis_report = fileAnalysis(file_id)
+            print(analysis_report)
         except FileNotFoundError:
             print(f"Error: The file '{file_path}' was not found.")
         except Exception as e:
