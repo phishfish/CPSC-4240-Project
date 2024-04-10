@@ -34,6 +34,7 @@ def get_hash(file):
             file_bytes = open_file.read(READ_SIZE)
     return file_hash.hexdigest()
 
+#Parses Essential Information from File Analysis
 def parse_report(report):
     """
     Parses the report from VirusTotal and prints a user-friendly summary.
