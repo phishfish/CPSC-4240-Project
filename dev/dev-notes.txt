@@ -1,6 +1,16 @@
 Risk score printed to user and vendors that say file is malicious
 Check File Size
 Command line flags for user
+
 1. "-h" manpage
 2. "-i" analyze IP
 3. "-f" pipe into a different files
+
+
+Functionality to handle files larger than 32MB by breaking them into chunks for hashing, which could be a way to indirectly manage large file submissions since the direct API might have limitations or specific handling procedures for large files
+
+Features:
+- Added a simple check to ensure the user runs the program with the correct number of arguments, providing usage instructions if not
+- Added print statements to indicate the progress of hash calculation and report retrieval. This helps set user expectations about the program's progress
+- Error Handling: Improved error handling includes more descriptive messages for failed API requests
+- The parse_report function takes the JSON response and extracts key information. It provides a summary of the scan results, including how many detections were malicious, undetected, harmless, suspicious, or failed. It also lists which antivirus engines detected the file as malicious and their specific verdicts. This makes it easier for users to understand the potential threats without having to navigate raw JSON data

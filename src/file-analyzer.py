@@ -1,9 +1,10 @@
 import sys
 import hashlib
+import time
 import requests
 
 # WARNING: DO NOT PUSH YOUR APIKEY HERE
-API_KEY = 'your_api_key_here'
+API_KEY = '5f4eb36e1c81f098f84ddf2b86fb3bbde18df9ac8580cdda8c02a2061b1c6f8d'
 READ_SIZE = 65536
 
 def get_request(calc_hash):
@@ -70,7 +71,7 @@ def uploadFile(fileName):
         elif response.status_code == 429:
             print("Rate limit exceeded. Waiting...")
             time.sleep(60)
-        elip response.status_code == 401:
+        elif response.status_code == 401:
             print("Failed to upload file. Did you include an API key?")
             break
         else:
@@ -79,14 +80,14 @@ def uploadFile(fileName):
     return response
 
 #Print Analysis of File
-def fileAnalysis(file, file_hash):
+def file_analysis(file, file_hash):
     hash_url = "https://www.virustotal.com/api/v3/files/" + file_hash
     url = "https://www.virustotal.com/api/v3/analyses/" + file_ID
     headers =  {"accept": "application/json", 'x-apikey': API_KEY}
     response = requests.get(url, headers=headers)
 
 #Retrieving file report of the hashed file
-def retrieveReport(file):
+def retrieve_report(file):
 
     file_hash = get_hash(file)
     url = "https://www.virustotal.com/api/v3/files/" + file_hash
