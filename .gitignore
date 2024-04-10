@@ -1,2 +1,6 @@
 *.txt
 *.swp
+*.exe
+*.msi
+*.o
+*.pdf
