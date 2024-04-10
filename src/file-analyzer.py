@@ -117,17 +117,13 @@ def main():
         print("-f --another file        will print the output to another file")
         sys.exit(1)
     else:
-        file_path = sys.argv[1]
         try:
-#             file_hash = get_hash(file_path)
-#             report = get_request(file_hash)
-#             parse_report(report)
             file = sys.argv[1]
             response = uploadFile(file)
             response = response.json()
             file_id = response['data']['id']
             analysis_report = fileAnalysis(file_id)
-            print(analysis_report)
+            analysis_report = analysis_report.json()
         except FileNotFoundError:
             print(f"Error: The file '{file_path}' was not found.")
         except Exception as e:
