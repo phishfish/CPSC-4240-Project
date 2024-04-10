@@ -3,7 +3,7 @@ import hashlib
 import requests
 
 # WARNING: DO NOT PUSH YOUR APIKEY HERE
-API_KEY = ''
+API_KEY = 'f809ff8422b573c68a15f8e8f97782942e2fcada0f7d5b3ba2bda99b78de0025'
 READ_SIZE = 65536
 
 def get_request(calc_hash):
@@ -58,7 +58,13 @@ def parse_report(report):
 
 #Uploading File to VirusTotal
 def uploadFile(fileName):
-    url = "https://www.virustotal.com/api/v3/files"
+    url = ""
+    file_size = (os.stat(fileName).st_size) / (1024 * 1024)
+    if file_size > 32:
+        url = "https://www.virustotal.com/api/v3/files/upload_url"
+    else:
+        url = "https://www.virustotal.com/api/v3/files"
+    
     with open(fileName, "rb") as file:
         contents = file.read()
     files = {"file": (fileName, contents)}
@@ -107,6 +113,7 @@ def main():
 #             file_hash = get_hash(file_path)
 #             report = get_request(file_hash)
 #             parse_report(report)
+            file = sys.argv[1]
             response = uploadFile(file)
             response = response.json()
             file_id = response['data']['id']
