@@ -108,7 +108,7 @@ def retrieveReport(file):
     headers = {"accept": "application/json", 'x-apikey': API_KEY}
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
-        return response.text
+        return response.json()
     else:
         print(f"Failed to retrieve report: HTTP {response.status_code}")
         return None
@@ -129,6 +129,7 @@ def main():
             analysis_report = fileAnalysis(file_id)
             analysis_report = analysis_report.json()
             parse_report(analysis_report)
+
         except FileNotFoundError:
             print(f"Error: The file '{file_path}' was not found.")
         except Exception as e:
