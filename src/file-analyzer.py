@@ -63,6 +63,9 @@ def uploadFile(fileName):
     file_size = (os.stat(fileName).st_size) / (1024 * 1024)
     if file_size > 32:
         url = "https://www.virustotal.com/api/v3/files/upload_url"
+    elif file_size > 650:
+        print("File exceeds 650 MB limit")
+        exit()
     else:
         url = "https://www.virustotal.com/api/v3/files"
     
@@ -124,6 +127,7 @@ def main():
             file_id = response['data']['id']
             analysis_report = fileAnalysis(file_id)
             analysis_report = analysis_report.json()
+
         except FileNotFoundError:
             print(f"Error: The file '{file_path}' was not found.")
         except Exception as e:
