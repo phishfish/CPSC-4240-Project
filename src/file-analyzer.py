@@ -123,7 +123,12 @@ def main():
                 print("-v --verbose             output a diagnostic for the file processed")
                 sys.exit(1)
             elif flags[x] == 'v':
-                retrieveReport(file)
+                response = uploadFile(file)
+                response = response.json()
+                file_id = response['data']['id']
+                analysis_report = fileAnalysis(file_id)
+                print(analysis_report.json())
+                parse_report(get_request(get_hash(file)))
     else:
         try:
             file = sys.argv[1]
