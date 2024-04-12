@@ -129,7 +129,7 @@ def main():
             response = response.json()
             file_id = response['data']['id']
             analysis_report = fileAnalysis(file_id)
-            print(analysis_report.json())
+            analysis_report = analysis_report.json()
         except FileNotFoundError:
             print(f"Error: The file '{file_path}' was not found.")
         except Exception as e:
