@@ -112,7 +112,8 @@ def retrieveReport(file):
 def main():
     if(sys.argv[1].startswith('-')):
         flags = sys.argv[1]
-        for x in range(len(flags) - 1):
+        file = sys.argv[2]
+        for x in range(len(flags)):
             if flags.__contains__("h"):
                 print("Usage: python3 file-analyzer.py [OPTION] ... FILE")
                 print("Analyzer a file for malware using the VirusTotal API")
@@ -121,8 +122,8 @@ def main():
                 print("-f --another file        will print the output to another file")
                 print("-v --verbose             output a diagnostic for the file processed")
                 sys.exit(1)
-            elif flags.__contains__("v"):
-                retrieveReport(sys.argv[2])
+            elif flags[x] == 'v':
+                retrieveReport(file)
     else:
         try:
             file = sys.argv[1]
@@ -130,7 +131,7 @@ def main():
             response = response.json()
             file_id = response['data']['id']
             analysis_report = fileAnalysis(file_id)
-            parse_report(analysis_report.json())
+            parse_report(get_request(get_hash(file)))
         except FileNotFoundError:
             print(f"Error: The file '{file_path}' was not found.")
         except Exception as e:
