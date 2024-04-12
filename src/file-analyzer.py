@@ -112,9 +112,9 @@ def retrieveReport(file):
 def main():
     if(sys.argv[1].startswith('-')):
         flags = sys.argv[1]
-        for x in range(len(flags)):
+        for x in range(len(flags) - 1):
             if flags.__contains__("h"):
-                print("Detect malicious behavior in a file or an IP address")
+                print("Usage: ")
                 print("-----------------------------------------------------------------------------")
                 print("-i --IP address          will check a malicious IP address instead of a file")
                 print("-f --another file        will print the output to another file")
@@ -122,6 +122,8 @@ def main():
                 sys.exit(1)
             elif flags.__contains__("v"):
                 retrieveReport(sys.argv[2])
+            elif flags.__contains__("p"):
+                parse_report(get_request(get_hash(sys.argv[2])))
     else:
         try:
             file = sys.argv[1]
@@ -129,7 +131,7 @@ def main():
             response = response.json()
             file_id = response['data']['id']
             analysis_report = fileAnalysis(file_id)
-            analysis_report = analysis_report.json()
+            print(analysis_report.json())
         except FileNotFoundError:
             print(f"Error: The file '{file_path}' was not found.")
         except Exception as e:
