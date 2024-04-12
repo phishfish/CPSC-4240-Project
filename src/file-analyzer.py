@@ -4,7 +4,7 @@ import hashlib
 import requests
 
 # WARNING: DO NOT PUSH YOUR APIKEY HERE
-API_KEY = ''
+API_KEY = '5a6524a913362c4c0b91a05e35365b32bf45ce25a86a827cb97e422d8ba66275'
 READ_SIZE = 65536
 
 def get_request(calc_hash):
@@ -114,16 +114,15 @@ def main():
         flags = sys.argv[1]
         for x in range(len(flags) - 1):
             if flags.__contains__("h"):
-                print("Usage: ")
+                print("Usage: python3 file-analyzer.py [OPTION] ... FILE")
+                print("Analyzer a file for malware using the VirusTotal API")
                 print("-----------------------------------------------------------------------------")
                 print("-i --IP address          will check a malicious IP address instead of a file")
                 print("-f --another file        will print the output to another file")
-                print("-v --verbose             print the output in more detail")
+                print("-v --verbose             output a diagnostic for the file processed")
                 sys.exit(1)
             elif flags.__contains__("v"):
                 retrieveReport(sys.argv[2])
-            elif flags.__contains__("p"):
-                parse_report(get_request(get_hash(sys.argv[2])))
     else:
         try:
             file = sys.argv[1]
@@ -131,7 +130,7 @@ def main():
             response = response.json()
             file_id = response['data']['id']
             analysis_report = fileAnalysis(file_id)
-            print(analysis_report.json())
+            parse_report(analysis_report.json())
         except FileNotFoundError:
             print(f"Error: The file '{file_path}' was not found.")
         except Exception as e:
