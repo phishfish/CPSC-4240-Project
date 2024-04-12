@@ -110,12 +110,18 @@ def retrieveReport(file):
     return response
 
 def main():
-    if len(sys.argv) > 1 and sys.argv[1].startswith('-'):
-        print("Detect malicious behavior in a file or an IP address")
-        print("-----------------------------------------------------------------------------")
-        print("-i --IP address          will check a malicious IP address instead of a file")
-        print("-f --another file        will print the output to another file")
-        sys.exit(1)
+    if(sys.argv[1].startswith('-')):
+        flags = sys.argv[1]
+        for x in range(len(flags)):
+            if flags.__contains__("h"):
+                print("Detect malicious behavior in a file or an IP address")
+                print("-----------------------------------------------------------------------------")
+                print("-i --IP address          will check a malicious IP address instead of a file")
+                print("-f --another file        will print the output to another file")
+                print("-v --verbose             print the output in more detail")
+                sys.exit(1)
+            elif flags.__contains__("v"):
+                retrieveReport(sys.argv[2])
     else:
         try:
             file = sys.argv[1]
