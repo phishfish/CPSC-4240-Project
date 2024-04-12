@@ -7,6 +7,13 @@ import requests
 API_KEY = ''
 READ_SIZE = 65536
 
+def get_IP_request(webPage):
+    print(f"Retrieving report for IP: {webPage}")
+    url = f"https://www.virustotal.com/api/v3/ip_addresses/{webPage}"
+    headers = {"x-apikey": API_KEY}
+    response = requests.get(url, headers=headers)
+    parse_report(response.json)
+
 def get_request(calc_hash):
     """
     Performs a GET request to the VirusTotal API to retrieve the scan report of the file.
@@ -33,7 +40,8 @@ def get_hash(file):
             file_hash.update(file_bytes)
             file_bytes = open_file.read(READ_SIZE)
     return file_hash.hexdigest()
-
+#def parse_IP_report(IP_report):
+    
 def parse_report(report):
     """
     Parses the report from VirusTotal and prints a user-friendly summary.
@@ -124,6 +132,8 @@ def main():
                 sys.exit(1)
             elif flags[x] == 'v':
                 retrieveReport(file)
+            elif flags[x] == 'i':
+                get_IP_request(file)
     else:
         try:
             file = sys.argv[1]
