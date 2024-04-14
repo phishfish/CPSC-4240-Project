@@ -12,7 +12,7 @@ def get_IP_request(webPage):
     url = f"https://www.virustotal.com/api/v3/ip_addresses/{webPage}"
     headers = {"x-apikey": API_KEY}
     response = requests.get(url, headers=headers)
-    parse_report(response.json)
+    parse_report(response.json())
 
 def get_request(calc_hash):
     """
@@ -40,7 +40,29 @@ def get_hash(file):
             file_hash.update(file_bytes)
             file_bytes = open_file.read(READ_SIZE)
     return file_hash.hexdigest()
-#def parse_IP_report(IP_report):
+def parse_IP_report(IP_report):
+    if IP_report is None:
+        print("No report found for the specified IP.")
+        return
+    
+    last_analysis_stats = IP_report['data']['attributes']['last_analysis_stats']
+
+    scan_summary = f'''
+    Scan Summary:
+    Malicious detections: {last_analysis_stats['malicious']}
+    Undetected: {last_analysis_stats['undetected']}
+    Harmless detections: {last_analysis_stats['harmless']}
+    Suspicious detections: {last_analysis_stats['suspicious']}
+    Failed scans: {last_analysis_stats['timeout']}
+    '''
+
+    detected_engines = IP_report['data']['attributes']['last_analysis_results'].keys()
+    detected_by = '\nDetected By:'
+    for engine in detected_engines:
+        detected_by += f'\n- {engine}'
+
+    print(scan_summary)
+    print(detected_by)
     
 def parse_report(report):
     """
@@ -133,7 +155,7 @@ def main():
             elif flags[x] == 'v':
                 retrieveReport(file)
             elif flags[x] == 'i':
-                get_IP_request(file)
+                parse_IP_report(get_IP_request(file))
     else:
         try:
             file = sys.argv[1]
