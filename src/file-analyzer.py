@@ -2,6 +2,7 @@ import sys
 import os
 import hashlib
 import requests
+import subprocess
 
 # WARNING: DO NOT PUSH YOUR APIKEY HERE
 API_KEY = ''
@@ -96,6 +97,27 @@ def uploadFile(fileName):
             break  
     return response
 
+def hunt_persist():
+    try:
+        cron_jobs = subprocess.check_output(['crontab', '-l'], stderr=subprocess.STDOUT, text=True)
+        print("Scheduled cron jobs: ")
+        print(cron_jobs)
+    except subprocess.CalledProcessError as e:
+        if e.returncode == 1:
+            print("No scheduled cron jobs found")
+
+    user_accounts = subprocess.check_output(['getent', 'passwd'], stderr=subprocess.STDOUT, text=True)
+    print("Accounts on machine: ")
+    print(user_accounts)
+
+    connections = subprocess.check_output(['ss', '-tulpn'], stderr=subprocess.STDOUT, text=True)
+    print("Connections and listening ports:")
+    print(connections)
+
+    services = subprocess.check_output(['systemctl', 'list-timers'], stderr=subprocess.STDOUT, text=True)
+    print("Services: ")
+    print(services)
+
 #Print Analysis of File
 def fileAnalysis(file_ID):
     url = "https://www.virustotal.com/api/v3/analyses/" + file_ID
@@ -128,7 +150,7 @@ def main():
         print("-f --another file        will print the output to another file")
         print("-v --verbose             output a diagnostic for the file processed")
         print("-p --persistence         hunt for persistence left behind by an attacker")
-        print("-t --attack tactics      ")
+        print("-t --attack tactics      lists possible indicators a file is malicious")
         sys.exit(1)
 
     if '-v' in flags:
@@ -155,6 +177,14 @@ def main():
                 get_IP_request(ip)
         else:
             get_IP_request(ip)
+
+    if '-p' in flags:
+        if outfile: 
+            with open(outfile, 'a') as f:
+                sys.stdout = f
+                hunt_persist()
+        else:
+            hunt_persist()
     
     if not flags[0].startswith('-'):
         file = flags[0]
