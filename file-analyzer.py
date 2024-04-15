@@ -202,39 +202,27 @@ def main():
         #Option for Files
         elif flags[0][0] == '-f':
             file = flags[0][1]
+            response = uploadFile(file)
+            response = response.json()
+            file_id = response['data']['id']
+            analysis_report = fileAnalysis(file_id)
             if flags[1][0] == '-v':
                 if len(flags) == 3:
                     if flags[2][0] == '-p':
                         output_report = flags[2][1]
                         #File verbose pipe
-                        response = uploadFile(file)
-                        response = response.json()
-                        file_id = response['data']['id']
-                        analysis_report = fileAnalysis(file_id)
                         fileRedirection(analysis_report.text, output_report)
                 else:
                     #File verbose not pipe
-                    response = uploadFile(file)
-                    response = response.json()
-                    file_id = response['data']['id']
-                    analysis_report = fileAnalysis(file_id)
                     print(analysis_report.text)
             elif flags[1][0] == '-s':
                 if len(flags) == 3:
                     if flags[2][0] == '-p':
                         output_report = flags[2][1]
                         #File summary pipe
-                        response = uploadFile(file)
-                        response = response.json()
-                        file_id = response['data']['id']
-                        analysis_report = fileAnalysis(file_id)
                         fileRedirection(parse_report(get_request(get_hash(file))), output_report)
                 else:
                     #File summary not pipe
-                    response = uploadFile(file)
-                    response = response.json()
-                    file_id = response['data']['id']
-                    analysis_report = fileAnalysis(file_id)
                     print(parse_report(get_request(get_hash(file))))
             else:
                 print('Invalid Arguments')
