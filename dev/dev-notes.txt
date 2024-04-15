@@ -15,4 +15,10 @@ Features:
 - Error Handling: Improved error handling includes more descriptive messages for failed API requests
 - The parse_report function takes the JSON response and extracts key information. It provides a summary of the scan results, including how many detections were malicious, undetected, harmless, suspicious, or failed. It also lists which antivirus engines detected the file as malicious and their specific verdicts. This makes it easier for users to understand the potential threats without having to navigate raw JSON data
 
-Allowing the user to input a specific MITRE ATT&CK technique ID or name they want to match. You can pass this as a command-line argument or through an interactive prompt
+The display_mitre_techniques function lists all tactics and techniques observed in the file, based on the MITRE ATT&CK data fetched from VirusTotal
+Scan and report on all MITRE ATT&CK techniques observed in a file. 
+
+- one for fetching the general scan results (get_request) 
+- another for fetching MITRE attack data (get_mitre_attack_data).
+- display_mitre_techniques(): This function takes the JSON response and iteratively prints out each sandbox's tactics and techniques, along with any associated signatures and their severity
+- The main function to call display_mitre_techniques appropriately. This involves making sure that the MITRE ATT&CK data fetched by get_request is processed and displayed
