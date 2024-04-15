@@ -2,6 +2,7 @@ import sys
 import os
 import hashlib
 import requests
+import subprocess
 
 # WARNING: DO NOT PUSH YOUR APIKEY HERE
 API_KEY = ''
@@ -12,8 +13,33 @@ def get_IP_request(webPage):
     url = f"https://www.virustotal.com/api/v3/ip_addresses/{webPage}"
     headers = {"x-apikey": API_KEY}
     response = requests.get(url, headers=headers)
-    parse_report(response.json())
+    print("Response JSON:", response.json())
+    parse_IP_report(response.json())
+    
+def parse_IP_report(IP_report):
+    if IP_report is None:
+        print("No report found for the specified IP.")
+        return
+    
+    last_analysis_stats = IP_report['data']['attributes']['last_analysis_stats']
 
+    scan_summary = f'''
+    Scan Summary:
+    Malicious detections: {last_analysis_stats['malicious']}
+    Undetected: {last_analysis_stats['undetected']}
+    Harmless detections: {last_analysis_stats['harmless']}
+    Suspicious detections: {last_analysis_stats['suspicious']}
+    Failed scans: {last_analysis_stats['timeout']}
+    '''
+
+    detected_engines = IP_report['data']['attributes']['last_analysis_results'].keys()
+    detected_by = '\nDetected By:'
+    for engine in detected_engines:
+        detected_by += f'\n- {engine}'
+
+    print(scan_summary)
+    print(detected_by)
+    
 def get_request(calc_hash):
     """
     Performs a GET request to the VirusTotal API to retrieve the scan report of the file.
@@ -40,30 +66,7 @@ def get_hash(file):
             file_hash.update(file_bytes)
             file_bytes = open_file.read(READ_SIZE)
     return file_hash.hexdigest()
-def parse_IP_report(IP_report):
-    if IP_report is None:
-        print("No report found for the specified IP.")
-        return
-    
-    last_analysis_stats = IP_report['data']['attributes']['last_analysis_stats']
 
-    scan_summary = f'''
-    Scan Summary:
-    Malicious detections: {last_analysis_stats['malicious']}
-    Undetected: {last_analysis_stats['undetected']}
-    Harmless detections: {last_analysis_stats['harmless']}
-    Suspicious detections: {last_analysis_stats['suspicious']}
-    Failed scans: {last_analysis_stats['timeout']}
-    '''
-
-    detected_engines = IP_report['data']['attributes']['last_analysis_results'].keys()
-    detected_by = '\nDetected By:'
-    for engine in detected_engines:
-        detected_by += f'\n- {engine}'
-
-    print(scan_summary)
-    print(detected_by)
-    
 def parse_report(report):
     """
     Parses the report from VirusTotal and prints a user-friendly summary.
@@ -75,6 +78,9 @@ def parse_report(report):
     attributes = report['data']['attributes']
     last_analysis_stats = attributes.get('last_analysis_stats', {})
     detection_names = attributes.get('last_analysis_results', {})
+    country = attributes.get("country")
+    if country is None:
+        country = "Unknown"
     detected_by = {k: v for k, v in detection_names.items() if v['category'] == 'malicious'}
 
     print("\nScan Summary:")
@@ -83,6 +89,7 @@ def parse_report(report):
     print(f"Harmless detections: {last_analysis_stats.get('harmless', 0)}")
     print(f"Suspicious detections: {last_analysis_stats.get('suspicious', 0)}")
     print(f"Failed scans: {last_analysis_stats.get('type-unsupported', 0) + last_analysis_stats.get('failure', 0)}")
+    print(f"Country: " + country)
     print("\nDetected By:")
     for engine, result in detected_by.items():
         print(f"- {engine}: {result['result']}")
@@ -115,6 +122,27 @@ def uploadFile(fileName):
             break  
     return response
 
+def hunt_persist():
+    try:
+        cron_jobs = subprocess.check_output(['crontab', '-l'], stderr=subprocess.STDOUT, text=True)
+        print("Scheduled cron jobs: ")
+        print(cron_jobs)
+    except subprocess.CalledProcessError as e:
+        if e.returncode == 1:
+            print("No scheduled cron jobs found")
+
+    user_accounts = subprocess.check_output(['getent', 'passwd'], stderr=subprocess.STDOUT, text=True)
+    print("Accounts on machine: ")
+    print(user_accounts)
+
+    connections = subprocess.check_output(['ss', '-tulpn'], stderr=subprocess.STDOUT, text=True)
+    print("Connections and listening ports:")
+    print(connections)
+
+    services = subprocess.check_output(['systemctl', 'list-timers'], stderr=subprocess.STDOUT, text=True)
+    print("Services: ")
+    print(services)
+
 #Print Analysis of File
 def fileAnalysis(file_ID):
     url = "https://www.virustotal.com/api/v3/analyses/" + file_ID
@@ -132,41 +160,75 @@ def fileAnalysis(file_ID):
     return response
 
 def main():
-    if(sys.argv[1].startswith('-')):
-        flags = sys.argv[1]
-        file = sys.argv[2]
-        for x in range(len(flags)):
-            if flags.__contains__("h"):
-                print("Usage: python3 file-analyzer.py [OPTION] ... FILE")
-                print("Analyzer a file for malware using the VirusTotal API")
-                print("-----------------------------------------------------------------------------")
-                print("-i --IP address          will check a malicious IP address instead of a file")
-                print("-f --another file        will print the output to another file")
-                print("-v --verbose             output a diagnostic for the file processed")
-                print("-p --persistence         hunt for persistence left behind by an attacker")
-                sys.exit(1)
-            elif flags[x] == 'v':
-                response = uploadFile(file)
-                response = response.json()
-                file_id = response['data']['id']
-                analysis_report = fileAnalysis(file_id)
+    flags = args = sys.argv[1:]
+    outfile = None
+    if '-f' in flags:
+        index = flags.index('-f')
+        outfile = flags[index + 1]
+        del flags[index:index + 2]
+
+    if '-h' in flags:
+        print("Usage: python3 file-analyzer.py [OPTION] ... FILE")
+        print("Analyzer a file for malware using the VirusTotal API")
+        print("-----------------------------------------------------------------------------")
+        print("-i --IP address          will check a malicious IP address instead of a file")
+        print("-f --another file        will print the output to another file")
+        print("-v --verbose             output a diagnostic for the file processed")
+        print("-p --persistence         hunt for persistence left behind by an attacker")
+        print("-t --attack tactics      lists possible indicators a file is malicious")
+        sys.exit(1)
+
+    if '-v' in flags:
+        index = flags.index('-v')
+        file = flags[index + 1]
+        response = uploadFile(file)
+        response = response.json()
+        file_id = response['data']['id']
+        analysis_report = fileAnalysis(file_id)
+
+        if outfile:
+            with open(outfile, 'a') as f:
+                sys.stdout = f
                 print(analysis_report.json())
-            elif flags[x] == 'i':
-                parse_IP_report(get_IP_request(file))
-                # This is to scan an IP lol why is there a parse file report here?
+        else:
+            print(analysis_report.json())
+    if '-i' in flags:
+        index = flags.index('-i')
+        ip = flags[index + 1]
+
+        if outfile:
+            with open(outfile, 'a') as f:
+                sys.stdout = f
+                get_IP_request(ip)
+        else:
+            get_IP_request(ip)
+
+    if '-p' in flags:
+        if outfile: 
+            with open(outfile, 'a') as f:
+                sys.stdout = f
+                hunt_persist()
+        else:
+            hunt_persist()
+    
+    if not flags[0].startswith('-'):
+        file = flags[0]
+        response = uploadFile(file)
+        response = response.json()
+        file_id = response['data']['id']
+        analysis_report = fileAnalysis(file_id)
+        
+        if outfile:
+            with open(outfile, 'a') as f:
+                sys.stdout = f
                 parse_report(get_request(get_hash(file)))
-    else:
-        try:
-            file = sys.argv[1]
-            response = uploadFile(file)
-            response = response.json()
-            file_id = response['data']['id']
-            analysis_report = fileAnalysis(file_id)
+        else:
             parse_report(get_request(get_hash(file)))
-        except FileNotFoundError:
-            print(f"Error: The file '{file_path}' was not found.")
-        except Exception as e:
-            print(f"An unexpected error occurred: {str(e)}")
+
+    # except FileNotFoundError:
+    #     print(f"Error: The file '{file_path}' was not found.")
+    # except Exception as e:
+    #     print(f"An unexpected error occurred: {str(e)}")
     
 if __name__ == "__main__":
     main()
