@@ -9,6 +9,7 @@ import subprocess
 API_KEY = ''
 READ_SIZE = 65536
 
+#Get Report from VirusTotal - IP Address
 def get_IP_request(webPage):
     print(f"Retrieving report for IP: {webPage}")
     url = f"https://www.virustotal.com/api/v3/ip_addresses/{webPage}"
@@ -20,7 +21,7 @@ def get_IP_request(webPage):
         print(f"Failed to retrieve report: HTTP {response.status_code}")
         return None
     
-
+#Get Report from VirusTotal - Hashed File
 def get_request(calc_hash):
     """
     Performs a GET request to the VirusTotal API to retrieve the scan report of the file.
@@ -35,6 +36,7 @@ def get_request(calc_hash):
         print(f"Failed to retrieve report: HTTP {response.status_code}")
         return None
 
+#Get Hash Value from File
 def get_hash(file):
     """
     Generates a SHA-256 hash of the file by reading in chunks.
@@ -48,6 +50,7 @@ def get_hash(file):
             file_bytes = open_file.read(READ_SIZE)
     return file_hash.hexdigest()
 
+#Parsing of a report
 def parse_report(report):
     """
     Parses the report from VirusTotal and prints a user-friendly summary.
@@ -62,18 +65,18 @@ def parse_report(report):
     detected_by = {k: v for k, v in detection_names.items() if v['category'] == 'malicious'}
 
     
-    title = "\nScan Summary:"
-    detections = "Malicious detections: " + str(last_analysis_stats.get('malicious', 0))
-    undetected = "Undetected: " + str(last_analysis_stats.get('undetected', 0))
-    harmless = "Harmless detections: " + str(last_analysis_stats.get('harmless', 0))
-    suspicious = "Suspicious detections: " + str(last_analysis_stats.get('suspicious', 0))
-    fail = "Failed scans: " + str(last_analysis_stats.get('type-unsupported', 0)) + str(last_analysis_stats.get('failure', 0))
-    detected = "\nDetected By:\n"
+    scan_summary = f'''
+    \nScan Summary:
+    Malicious detections: {last_analysis_stats.get('malicious', 0)}
+    Undetected: {last_analysis_stats.get('undetected', 0)}
+    Harmless detections: {last_analysis_stats.get('harmless', 0)}
+    Suspicious detections: {last_analysis_stats.get('suspicious', 0)}
+    Failed scans: {last_analysis_stats.get('type-unsupported', 0) + last_analysis_stats.get('failure', 0)}
+    Detected By:\n'''
     for engine, result in detected_by.items():
-        detected = detected + "- " + engine + ":" + result['result']
+        scan_summary += "- " + engine + ":" + result['result']
 
-    report = title + '\n' + detections + '\n' + undetected + '\n' + harmless + '\n' + suspicious + '\n' + fail + '\n' + detected
-    return report
+    return scan_summary
 
 #Uploading File to VirusTotal
 def uploadFile(fileName):
@@ -119,33 +122,34 @@ def fileAnalysis(file_ID):
             break
     return response
 
+#Hunting Persistence
 def hunt_persist():
-    persist_file = ""
     try:
         cron_jobs = subprocess.check_output(['crontab', '-l'], stderr=subprocess.STDOUT, text=True)
         cron_string = "Scheduled cron jobs: \n"
-        cron_string = cron_string + cron_jobs
+        cron_string += cron_jobs
     except subprocess.CalledProcessError as e:
         if e.returncode == 1:
             cron_string = "No scheduled cron jobs found"
             return cron_string
 
+    #Data from Hunting Persistence
     user_accounts = subprocess.check_output(['getent', 'passwd'], stderr=subprocess.STDOUT, text=True)
-    accounts_summary = "\nAccounts on machine: \n"
-    accounts_summary = accounts_summary + user_accounts
-
     connections = subprocess.check_output(['ss', '-tulpn'], stderr=subprocess.STDOUT, text=True)
-    connections_summary = "\nConnections and listening ports: \n"
-    connections_summary = connections_summary + connections
-
     services = subprocess.check_output(['systemctl', 'list-timers'], stderr=subprocess.STDOUT, text=True)
-    services_summary = "\nServices: \n"
-    services_summary = services_summary + services
 
-    persist_file = cron_string + accounts_summary + connections_summary + services_summary
+    #Persistent Report
+    persistent_report = f'''
+    Accounts on machine: 
+    {user_accounts}\n
+    Connections and listening ports:
+    {connections}\n
+    Services:
+    {services}'''
 
-    return persist_file
+    return cron_string + persistent_report
     
+#File Output Redirection
 def fileRedirection(report, output_report):
     with open(output_report, 'w') as sys.stdout:
        print(report)
@@ -201,12 +205,13 @@ def main():
         #Options for IP-Address
         if input_type_flag == '-i':
             ip_address = flags[0][1]
+            ip_address_report = get_IP_request(ip_address)
             if flags[1][0] == '-v':
                 if len(flags) == 3:
                     #Ip-address verbose Output Redirection
                     if flags[2][0] == '-o':
                         output_report = flags[2][1]
-                        fileRedirection(get_IP_request(ip_address), output_report)
+                        fileRedirection(ip_address_report, output_report)
                 #Ip address verbose not Output Redirection
                 else:
                     get_IP_request(ip_address)
@@ -215,7 +220,7 @@ def main():
                     #Ip address summary Output Redirection
                     if flags[2][0] == '-o':
                         output_report = flags[2][1]
-                        fileRedirection(parse_report(get_IP_request(ip_address)), output_report)
+                        fileRedirection(parse_report(ip_address_report), output_report)
                 #Ip address summary not Output Redirection
                 else:
                     parse_report(get_IP_request(ip_address))
