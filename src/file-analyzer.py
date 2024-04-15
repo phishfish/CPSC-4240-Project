@@ -131,14 +131,6 @@ def fileAnalysis(file_ID):
             break
     return response
 
-#Retrieving file report of the hashed file
-def retrieveReport(file):
-    file_hash = get_hash(file)
-    url = "https://www.virustotal.com/api/v3/files/" + file_hash
-    headers = {"accept": "application/json", 'x-apikey': API_KEY}
-    response = requests.get(url, headers=headers)
-    return response
-
 def main():
     if(sys.argv[1].startswith('-')):
         flags = sys.argv[1]
@@ -151,11 +143,18 @@ def main():
                 print("-i --IP address          will check a malicious IP address instead of a file")
                 print("-f --another file        will print the output to another file")
                 print("-v --verbose             output a diagnostic for the file processed")
+                print("-p --persistence         hunt for persistence left behind by an attacker")
                 sys.exit(1)
             elif flags[x] == 'v':
-                retrieveReport(file)
+                response = uploadFile(file)
+                response = response.json()
+                file_id = response['data']['id']
+                analysis_report = fileAnalysis(file_id)
+                print(analysis_report.json())
             elif flags[x] == 'i':
                 parse_IP_report(get_IP_request(file))
+                # This is to scan an IP lol why is there a parse file report here?
+                parse_report(get_request(get_hash(file)))
     else:
         try:
             file = sys.argv[1]
