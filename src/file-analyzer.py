@@ -5,7 +5,7 @@ import requests
 import subprocess
 
 # WARNING: DO NOT PUSH YOUR APIKEY HERE
-API_KEY = '5f4eb36e1c81f098f84ddf2b86fb3bbde18df9ac8580cdda8c02a2061b1c6f8d'
+API_KEY = ''
 READ_SIZE = 65536
 
 def get_IP_request(webPage):
