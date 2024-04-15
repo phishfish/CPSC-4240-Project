@@ -1,10 +1,10 @@
 import sys
+import os
 import hashlib
-import time
 import requests
 
 # WARNING: DO NOT PUSH YOUR APIKEY HERE
-API_KEY = '5f4eb36e1c81f098f84ddf2b86fb3bbde18df9ac8580cdda8c02a2061b1c6f8d'
+API_KEY = ''
 READ_SIZE = 65536
 
 def get_request(calc_hash):
@@ -59,7 +59,13 @@ def parse_report(report):
 
 #Uploading File to VirusTotal
 def uploadFile(fileName):
-    url = "https://www.virustotal.com/api/v3/files"
+    url = ""
+    file_size = (os.stat(fileName).st_size) / (1024 * 1024)
+    if file_size > 32:
+        url = "https://www.virustotal.com/api/v3/files/upload_url"
+    else:
+        url = "https://www.virustotal.com/api/v3/files"
+    
     with open(fileName, "rb") as file:
         contents = file.read()
     files = {"file": (fileName, contents)}
@@ -80,46 +86,54 @@ def uploadFile(fileName):
     return response
 
 #Print Analysis of File
-def file_analysis(file, file_hash):
-    hash_url = "https://www.virustotal.com/api/v3/files/" + file_hash
+def fileAnalysis(file_ID):
     url = "https://www.virustotal.com/api/v3/analyses/" + file_ID
     headers =  {"accept": "application/json", 'x-apikey': API_KEY}
-    response = requests.get(url, headers=headers)
+    while True:
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            break
+        elif response.status_code == 429:
+            print("Rate limit exceeded. Waiting...")
+            time.sleep(60)
+        else:
+            print(f"Failed to get file analysis. Error: {response.status_code}")
+            break
+    return response
 
-#Retrieving file report of the hashed file
-def retrieve_report(file):
-
-    file_hash = get_hash(file)
-    url = "https://www.virustotal.com/api/v3/files/" + file_hash
-    headers = {"accept": "application/json", 'x-apikey': API_KEY}
-    response = requests.get(url, headers=headers)
-    print(response.text)
-
-
-# Run program like "python3 file-analyzer.py <file>"
 def main():
-    #Saving File
-    file = sys.argv[1]
-
-    #Uploads the file and returns a response (aka, has this been uploaded already?)
-    response = uploadFile(file)
-    file_id = response.json().get("data").get("id")
-
-    if response == NOT_FOUND:
-        ...
-
-    #Option to Print out a File Analysis or File Report
-    #1. File Analysis - prints information on the analysis object (using id from uploadFile)
-    #2. File Report - retrieve detailed information about a file
-    # print('Enter Options "1" or "2": \n 1. File Analysis \n 2. File Report')
-    # answer = input()
-    # if answer == "1":
-    #     fileAnalysis(file_id)
-    # elif answer == "2":
-    #     retrieveReport(file)
-
-    #report = get_request(file_hash)
-    #print(report)
+    if(sys.argv[1].startswith('-')):
+        flags = sys.argv[1]
+        file = sys.argv[2]
+        for x in range(len(flags)):
+            if flags.__contains__("h"):
+                print("Usage: python3 file-analyzer.py [OPTION] ... FILE")
+                print("Analyzer a file for malware using the VirusTotal API")
+                print("-----------------------------------------------------------------------------")
+                print("-i --IP address          will check a malicious IP address instead of a file")
+                print("-f --another file        will print the output to another file")
+                print("-v --verbose             output a diagnostic for the file processed")
+                print("-p --persistence         hunt for persistence left behind by an attacker")
+                sys.exit(1)
+            elif flags[x] == 'v':
+                response = uploadFile(file)
+                response = response.json()
+                file_id = response['data']['id']
+                analysis_report = fileAnalysis(file_id)
+                print(analysis_report.json())
+                parse_report(get_request(get_hash(file)))
+    else:
+        try:
+            file = sys.argv[1]
+            response = uploadFile(file)
+            response = response.json()
+            file_id = response['data']['id']
+            analysis_report = fileAnalysis(file_id)
+            parse_report(get_request(get_hash(file)))
+        except FileNotFoundError:
+            print(f"Error: The file '{file_path}' was not found.")
+        except Exception as e:
+            print(f"An unexpected error occurred: {str(e)}")
     
 if __name__ == "__main__":
     main()
