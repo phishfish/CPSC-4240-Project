@@ -259,11 +259,6 @@ def main():
                 parse_report(get_request(get_hash(file)))
         else:
             parse_report(get_request(get_hash(file)))
-
-    # except FileNotFoundError:
-    #     print(f"Error: The file '{file_path}' was not found.")
-    # except Exception as e:
-    #     print(f"An unexpected error occurred: {str(e)}")
     
 if __name__ == "__main__":
     main()
