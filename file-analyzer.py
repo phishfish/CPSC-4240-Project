@@ -3,6 +3,7 @@ import getopt
 import os
 import hashlib
 import requests
+import subprocess
 
 # WARNING: DO NOT PUSH YOUR APIKEY HERE
 API_KEY = ''
@@ -118,18 +119,32 @@ def fileAnalysis(file_ID):
             break
     return response
 
-#Retrieving file report of the hashed file
-def retrieveReport(file):
-    file_hash = get_hash(file)
-    url = "https://www.virustotal.com/api/v3/files/" + file_hash
-    headers = {"accept": "application/json", 'x-apikey': API_KEY}
-    response = requests.get(url, headers=headers)
-    if response.status_code == 200:
-        return response.json()
-    else:
-        print(f"Failed to retrieve report: HTTP {response.status_code}")
-        return None
-    
+def hunt_persist():
+    persist_file = ""
+    try:
+        cron_jobs = subprocess.check_output(['crontab', '-l'], stderr=subprocess.STDOUT, text=True)
+        cron_string = "Scheduled cron jobs: \n"
+        cron_string = cron_string + cron_jobs
+    except subprocess.CalledProcessError as e:
+        if e.returncode == 1:
+            cron_string = "No scheduled cron jobs found"
+            return cron_string
+
+    user_accounts = subprocess.check_output(['getent', 'passwd'], stderr=subprocess.STDOUT, text=True)
+    accounts_summary = "\nAccounts on machine: \n"
+    accounts_summary = accounts_summary + user_accounts
+
+    connections = subprocess.check_output(['ss', '-tulpn'], stderr=subprocess.STDOUT, text=True)
+    connections_summary = "\nConnections and listening ports: \n"
+    connections_summary = connections_summary + connections
+
+    services = subprocess.check_output(['systemctl', 'list-timers'], stderr=subprocess.STDOUT, text=True)
+    services_summary = "\nServices: \n"
+    services_summary = services_summary + services
+
+    persist_file = cron_string + accounts_summary + connections_summary + services_summary
+
+    return persist_file
     
 def fileRedirection(report, output_report):
     with open(output_report, 'w') as sys.stdout:
@@ -145,20 +160,24 @@ def main():
     -i: IP Address
     -f: File
     -h: Manpage
+    -p: Hunt Persist
 
     -v: Verbose
     -s: summary
 
-    -p: Output Redirection
+    -o: Output Redirection
     '''
-    options = "i:f:hvsp:"
+
+    #Available Flags; if has ':' after the letter, it requires an additional argument after the flag
+    options = "i:f:hvspo:"
+
     try:
         # Parsing argument
         arguments, values = getopt.getopt(argumentList, options)
-        #Sortin of flags
+        #Sorting of flags
         flags=[]
         for input_type in range(len(arguments)):
-            if arguments[input_type][0] == '-i' or arguments[input_type][0] == '-f' or arguments[input_type][0] == '-h':
+            if arguments[input_type][0] == '-i' or arguments[input_type][0] == '-f' or arguments[input_type][0] == '-h' or arguments[input_type][0] == '-p':
                 flags.append(arguments[input_type])
                 break
         for output_type in range(len(arguments)):
@@ -166,7 +185,7 @@ def main():
                 flags.append(arguments[output_type])
                 break
         for pipe_validity in range(len(arguments)):
-            if arguments[pipe_validity][0] == '-p':
+            if arguments[pipe_validity][0] == '-o':
                 flags.append(arguments[pipe_validity])
                 break
 
@@ -174,33 +193,37 @@ def main():
         if len(flags) <= 0 or len(flags) > 5:
             print("Invalid Number of Arguments")
             sys.exit()
-        
+
+        #Flag Types
+        input_type_flag = flags[0][0]
+
         # checking each argument
         #Options for IP-Address
-        if flags[0][0] == '-i':
+        if input_type_flag == '-i':
             ip_address = flags[0][1]
             if flags[1][0] == '-v':
                 if len(flags) == 3:
-                    if flags[2][0] == '-p':
+                    #Ip-address verbose Output Redirection
+                    if flags[2][0] == '-o':
                         output_report = flags[2][1]
-                        #Ip-address verbose pipe
                         fileRedirection(get_IP_request(ip_address), output_report)
+                #Ip address verbose not Output Redirection
                 else:
-                    #Ip address verbose not pipe
                     get_IP_request(ip_address)
             elif flags[1][0] == '-s':
                 if len(flags) == 3:
-                    if flags[2][0] == '-p':
+                    #Ip address summary Output Redirection
+                    if flags[2][0] == '-o':
                         output_report = flags[2][1]
-                        #Ip address summary pipe
                         fileRedirection(parse_report(get_IP_request(ip_address)), output_report)
+                #Ip address summary not Output Redirection
                 else:
-                    #Ip address summary not pipe
                     parse_report(get_IP_request(ip_address))
             else:
                 print('Invalid Arguments')
+
         #Option for Files
-        elif flags[0][0] == '-f':
+        elif input_type_flag == '-f':
             file = flags[0][1]
             response = uploadFile(file)
             response = response.json()
@@ -208,33 +231,48 @@ def main():
             analysis_report = fileAnalysis(file_id)
             if flags[1][0] == '-v':
                 if len(flags) == 3:
-                    if flags[2][0] == '-p':
+                    #File verbose Output Redirection
+                    if flags[2][0] == '-o':
                         output_report = flags[2][1]
-                        #File verbose pipe
                         fileRedirection(analysis_report.text, output_report)
+                #File verbose not Output Redirection
                 else:
-                    #File verbose not pipe
                     print(analysis_report.text)
             elif flags[1][0] == '-s':
                 if len(flags) == 3:
-                    if flags[2][0] == '-p':
+                    #File summary Output Redirection
+                    if flags[2][0] == '-o':
                         output_report = flags[2][1]
-                        #File summary pipe
                         fileRedirection(parse_report(get_request(get_hash(file))), output_report)
+                #File summary not Output Redirection
                 else:
-                    #File summary not pipe
                     print(parse_report(get_request(get_hash(file))))
             else:
                 print('Invalid Arguments')
-        elif flags[0][0] == '-h':
-            print("Usage: python3 file-analyzer.py [OPTION] ... FILE")
+
+        #Option for Hunting Persistence
+        elif input_type_flag == '-p':
+            analysis_report = hunt_persist()
+            #Persistent Hunt Output Redirection
+            if len(flags) == 2:
+                if flags[1][0] == '-o':
+                    output_report = flags[1][1]
+                    fileRedirection(analysis_report, output_report)
+            #Persistent Hunt no Output Redirection
+            else:
+                print(analysis_report)
+
+        #Option for Manual Page
+        elif input_type_flag == '-h':
+            print("\n\nUsage: python3 file-analyzer.py [OPTION] ... FILE")
             print("Analyzer a file for malware using the VirusTotal API")
             print("-----------------------------------------------------------------------------")
             print("-i [IP-Address]              --IP address: will check a malicious IP address instead of a file")
             print("-f [File Name]               --File: will check a malicious file")
+            print("-p                           --Persistence: hunt for persistence left behind by an attacker")
             print("-s                           --Summary: summary diagnostic of a file")
             print("-v                           --Verbose: output a diagnostic for the file processed")
-            print("-p [Empty File Name]         --Pipe: perform output redirection to a stated output file")
+            print("-o [Empty File Name]         --Output Redirection: perform output redirection to a stated output file\n\n")
         else:
             print("Invalid Arguments")
     
