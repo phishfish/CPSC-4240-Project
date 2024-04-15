@@ -5,7 +5,7 @@ import requests
 import subprocess
 
 # WARNING: DO NOT PUSH YOUR APIKEY HERE
-API_KEY = ''
+API_KEY = 'f809ff8422b573c68a15f8e8f97782942e2fcada0f7d5b3ba2bda99b78de0025'
 READ_SIZE = 65536
 
 def get_IP_request(webPage):
@@ -19,28 +19,15 @@ def get_request(calc_hash):
     """
     Performs a GET request to the VirusTotal API to retrieve the scan report of the file.
     """
-    base_url = "https://www.virustotal.com/api/v3/files/"
-    headers = {"x-apikey": API_KEY, "accept": "application/json"}
-    scan_url = f"{base_url}{calc_hash}"
-    scan_response = requests.get(scan_url, headers=headers)
-    if scan_response.status_code != 200:
-        print(f"Failed to retrieve general scan report: HTTP {scan_response.status_code}")
+    print(f"Retrieving report for hash: {calc_hash}")
+    url = f"https://www.virustotal.com/api/v3/files/{calc_hash}"
+    headers = {"x-apikey": API_KEY}
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print(f"Failed to retrieve report: HTTP {response.status_code}")
         return None
-    return scan_response.json()
-
-def get_mitre_attack_data(calc_hash):
-    """
-    Retrieves the MITRE ATT&CK data for a file based on its hash.
-    """
-    base_url = "https://www.virustotal.com/api/v3/files/"
-    headers = {"x-apikey": API_KEY, "accept": "application/json"}
-    mitre_url = f"{base_url}{calc_hash}/behaviour_mitre_trees"
-    mitre_response = requests.get(mitre_url, headers=headers)
-    if mitre_response.status_code != 200:
-        print(f"Failed to retrieve MITRE ATT&CK data: HTTP {mitre_response.status_code}")
-        return None
-    return mitre_response.json()
-    
 
 def get_hash(file):
     """
@@ -55,6 +42,32 @@ def get_hash(file):
             file_bytes = open_file.read(READ_SIZE)
     return file_hash.hexdigest()
 
+def parse_report(report):
+    """
+    Parses the report from VirusTotal and prints a user-friendly summary.
+    """
+    if not report or 'data' not in report or 'attributes' not in report['data']:
+        print("No data found in the report.")
+        return
+    
+    attributes = report['data']['attributes']
+    last_analysis_stats = attributes.get('last_analysis_stats', {})
+    detection_names = attributes.get('last_analysis_results', {})
+    country = attributes.get("country")
+    if country is None:
+        country = "Unknown"
+    detected_by = {k: v for k, v in detection_names.items() if v['category'] == 'malicious'}
+
+    print("\nScan Summary:")
+    print(f"Malicious detections: {last_analysis_stats.get('malicious', 0)}")
+    print(f"Undetected: {last_analysis_stats.get('undetected', 0)}")
+    print(f"Harmless detections: {last_analysis_stats.get('harmless', 0)}")
+    print(f"Suspicious detections: {last_analysis_stats.get('suspicious', 0)}")
+    print(f"Failed scans: {last_analysis_stats.get('type-unsupported', 0) + last_analysis_stats.get('failure', 0)}")
+    print(f"Country: " + country)
+    print("\nDetected By:")
+    for engine, result in detected_by.items():
+        print(f"- {engine}: {result['result']}")
 
 def display_mitre_techniques(mitre_data):
     """Parses and displays MITRE ATT&CK data, sorting techniques by the highest severity within their signatures."""
@@ -86,33 +99,6 @@ def display_mitre_techniques(mitre_data):
                 print(f"      Highest Severity: {highest_severity}")
                 for severity, desc in descriptions:
                     print(f"        Signature: {desc} (Severity: {severity})")
-
-def parse_report(report):
-    """
-    Parses the report from VirusTotal and prints a user-friendly summary.
-    """
-    if not report or 'data' not in report or 'attributes' not in report['data']:
-        print("No data found in the report.")
-        return
-    
-    attributes = report['data']['attributes']
-    last_analysis_stats = attributes.get('last_analysis_stats', {})
-    detection_names = attributes.get('last_analysis_results', {})
-    country = attributes.get("country")
-    if country is None:
-        country = "Unknown"
-    detected_by = {k: v for k, v in detection_names.items() if v['category'] == 'malicious'}
-
-    print("\nScan Summary:")
-    print(f"Malicious detections: {last_analysis_stats.get('malicious', 0)}")
-    print(f"Undetected: {last_analysis_stats.get('undetected', 0)}")
-    print(f"Harmless detections: {last_analysis_stats.get('harmless', 0)}")
-    print(f"Suspicious detections: {last_analysis_stats.get('suspicious', 0)}")
-    print(f"Failed scans: {last_analysis_stats.get('type-unsupported', 0) + last_analysis_stats.get('failure', 0)}")
-    print(f"Country: " + country)
-    print("\nDetected By:")
-    for engine, result in detected_by.items():
-        print(f"- {engine}: {result['result']}")
 
 #Uploading File to VirusTotal
 def uploadFile(fileName):
@@ -163,6 +149,19 @@ def hunt_persist():
     print("Services: ")
     print(services)
 
+def get_mitre_attack_data(calc_hash):
+    """
+    Retrieves the MITRE ATT&CK data for a file based on its hash.
+    """
+    base_url = "https://www.virustotal.com/api/v3/files/"
+    headers = {"x-apikey": API_KEY, "accept": "application/json"}
+    mitre_url = f"{base_url}{calc_hash}/behaviour_mitre_trees"
+    mitre_response = requests.get(mitre_url, headers=headers)
+    if mitre_response.status_code != 200:
+        print(f"Failed to retrieve MITRE ATT&CK data: HTTP {mitre_response.status_code}")
+        return None
+    return mitre_response.json()
+
 #Print Analysis of File
 def fileAnalysis(file_ID):
     url = "https://www.virustotal.com/api/v3/analyses/" + file_ID
@@ -186,12 +185,10 @@ def main():
         index = flags.index('-f')
         outfile = flags[index + 1]
         del flags[index:index + 2]
-        
 
     if '-h' in flags:
         print("Usage: python3 file-analyzer.py [OPTION] ... FILE")
         print("Analyzer a file for malware using the VirusTotal API")
-        print("Options:")
         print("-----------------------------------------------------------------------------")
         print("-i --IP address          will check a malicious IP address instead of a file")
         print("-f --another file        will print the output to another file")
@@ -232,7 +229,7 @@ def main():
                 hunt_persist()
         else:
             hunt_persist()
-    
+
     if '-t' in args:
         t_index = args.index('-t')
         try:
@@ -240,10 +237,14 @@ def main():
             file_hash = get_hash(file_path)
             mitre_data = get_mitre_attack_data(file_hash)
             if mitre_data:
-                display_mitre_techniques(mitre_data)
+                if outfile:
+                    with open(outfile, 'a') as f:
+                        sys.stdout = f
+                        display_mitre_techniques(mitre_data)
+                else:
+                    display_mitre_techniques(mitre_data)
         except IndexError:
             print("Error: No file specified after -t flag.")
-            
     
     if not flags[0].startswith('-'):
         file = flags[0]

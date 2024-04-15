@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 Risk score printed to user and vendors that say file is malicious
 Check File Size
 Command line flags for user
@@ -22,3 +23,15 @@ Scan and report on all MITRE ATT&CK techniques observed in a file.
 - another for fetching MITRE attack data (get_mitre_attack_data).
 - display_mitre_techniques(): This function takes the JSON response and iteratively prints out each sandbox's tactics and techniques, along with any associated signatures and their severity
 - The main function to call display_mitre_techniques appropriately. This involves making sure that the MITRE ATT&CK data fetched by get_request is processed and displayed
+=======
+Risk score printed to user and vendors that say file is malicious
+Check File Size
+Command line flags for user
+1. "-h" manpage
+2. "-i" analyze IP
+3. "-f" pipe into a different files
+4. "-v" - print everything of the report
+5. No Flags - print summary of the file
+6. "-vendsum" - prints user-friendly summary of vendor analysis
+Possibly check the IPs a file reaches out to and add to risk score based on the risk score given back by IPs communicated to
+>>>>>>> main
