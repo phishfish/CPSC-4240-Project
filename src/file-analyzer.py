@@ -114,6 +114,12 @@ def fileAnalysis(file_ID):
 
 def main():
     flags = args = sys.argv[1:]
+    outfile = None
+    if '-f' in flags:
+        index = flags.index('-f')
+        outfile = flags[index + 1]
+        del flags[index:index + 2]
+
     if '-h' in flags:
         print("Usage: python3 file-analyzer.py [OPTION] ... FILE")
         print("Analyzer a file for malware using the VirusTotal API")
@@ -122,7 +128,9 @@ def main():
         print("-f --another file        will print the output to another file")
         print("-v --verbose             output a diagnostic for the file processed")
         print("-p --persistence         hunt for persistence left behind by an attacker")
+        print("-t --attack tactics      ")
         sys.exit(1)
+
     if '-v' in flags:
         index = flags.index('-v')
         file = flags[index + 1]
@@ -130,18 +138,37 @@ def main():
         response = response.json()
         file_id = response['data']['id']
         analysis_report = fileAnalysis(file_id)
-        print(analysis_report.json())
+
+        if outfile:
+            with open(outfile, 'a') as f:
+                sys.stdout = f
+                print(analysis_report.json())
+        else:
+            print(analysis_report.json())
     if '-i' in flags:
         index = flags.index('-i')
         ip = flags[index + 1]
-        get_IP_request(ip)
+
+        if outfile:
+            with open(outfile, 'a') as f:
+                sys.stdout = f
+                get_IP_request(ip)
+        else:
+            get_IP_request(ip)
+    
     if not flags[0].startswith('-'):
         file = flags[0]
         response = uploadFile(file)
         response = response.json()
         file_id = response['data']['id']
         analysis_report = fileAnalysis(file_id)
-        parse_report(get_request(get_hash(file)))
+        
+        if outfile:
+            with open(outfile, 'a') as f:
+                sys.stdout = f
+                parse_report(get_request(get_hash(file)))
+        else:
+            parse_report(get_request(get_hash(file)))
 
     # except FileNotFoundError:
     #     print(f"Error: The file '{file_path}' was not found.")
