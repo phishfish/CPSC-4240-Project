@@ -14,3 +14,5 @@ Features:
 - Added print statements to indicate the progress of hash calculation and report retrieval. This helps set user expectations about the program's progress
 - Error Handling: Improved error handling includes more descriptive messages for failed API requests
 - The parse_report function takes the JSON response and extracts key information. It provides a summary of the scan results, including how many detections were malicious, undetected, harmless, suspicious, or failed. It also lists which antivirus engines detected the file as malicious and their specific verdicts. This makes it easier for users to understand the potential threats without having to navigate raw JSON data
+
+Allowing the user to input a specific MITRE ATT&CK technique ID or name they want to match. You can pass this as a command-line argument or through an interactive prompt
