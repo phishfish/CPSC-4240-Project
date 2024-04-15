@@ -52,6 +52,9 @@ def parse_report(report):
     attributes = report['data']['attributes']
     last_analysis_stats = attributes.get('last_analysis_stats', {})
     detection_names = attributes.get('last_analysis_results', {})
+    country = attributes.get("country")
+    if country is None:
+        country = "Unknown"
     detected_by = {k: v for k, v in detection_names.items() if v['category'] == 'malicious'}
 
     print("\nScan Summary:")
@@ -60,6 +63,7 @@ def parse_report(report):
     print(f"Harmless detections: {last_analysis_stats.get('harmless', 0)}")
     print(f"Suspicious detections: {last_analysis_stats.get('suspicious', 0)}")
     print(f"Failed scans: {last_analysis_stats.get('type-unsupported', 0) + last_analysis_stats.get('failure', 0)}")
+    print(f"Country: " + country)
     print("\nDetected By:")
     for engine, result in detected_by.items():
         print(f"- {engine}: {result['result']}")
