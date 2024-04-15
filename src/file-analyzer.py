@@ -5,7 +5,7 @@ import requests
 import subprocess
 
 # WARNING: DO NOT PUSH YOUR APIKEY HERE
-API_KEY = ''
+API_KEY = 'f809ff8422b573c68a15f8e8f97782942e2fcada0f7d5b3ba2bda99b78de0025'
 READ_SIZE = 65536
 
 def get_IP_request(webPage):
@@ -69,6 +69,37 @@ def parse_report(report):
     for engine, result in detected_by.items():
         print(f"- {engine}: {result['result']}")
 
+def display_mitre_techniques(mitre_data):
+    """Parses and displays MITRE ATT&CK data, sorting techniques by the highest severity within their signatures."""
+    if not mitre_data or 'data' not in mitre_data:
+        print("No MITRE ATT&CK data available.")
+        return
+
+    for sandbox, details in mitre_data['data'].items():
+        print(f"\nSandbox: {sandbox}")
+        for tactic in details.get('tactics', []):
+            print(f"\n  Tactic: {tactic['name']} ({tactic['description']})")
+
+            # Process each technique to find the highest severity within its signatures
+            for technique in tactic.get('techniques', []):
+                highest_severity = "UNKNOWN"  # Default if no signatures exist
+                descriptions = []
+
+                for signature in technique.get('signatures', []):
+                    descriptions.append((signature['severity'], signature['description']))
+                    # Update highest severity based on predefined severity order
+                    severity_order = ['LOW', 'MEDIUM', 'HIGH', 'INFO', 'UNKNOWN']  # Customizable order
+                    if severity_order.index(signature['severity']) > severity_order.index(highest_severity):
+                        highest_severity = signature['severity']
+
+                # Sorting descriptions by severity according to the predefined order
+                descriptions.sort(key=lambda x: severity_order.index(x[0]))
+
+                print(f"    Technique: {technique['name']} - {technique['description']}")
+                print(f"      Highest Severity: {highest_severity}")
+                for severity, desc in descriptions:
+                    print(f"        Signature: {desc} (Severity: {severity})")
+
 #Uploading File to VirusTotal
 def uploadFile(fileName):
     url = ""
@@ -117,6 +148,19 @@ def hunt_persist():
     services = subprocess.check_output(['systemctl', 'list-timers'], stderr=subprocess.STDOUT, text=True)
     print("Services: ")
     print(services)
+
+def get_mitre_attack_data(calc_hash):
+    """
+    Retrieves the MITRE ATT&CK data for a file based on its hash.
+    """
+    base_url = "https://www.virustotal.com/api/v3/files/"
+    headers = {"x-apikey": API_KEY, "accept": "application/json"}
+    mitre_url = f"{base_url}{calc_hash}/behaviour_mitre_trees"
+    mitre_response = requests.get(mitre_url, headers=headers)
+    if mitre_response.status_code != 200:
+        print(f"Failed to retrieve MITRE ATT&CK data: HTTP {mitre_response.status_code}")
+        return None
+    return mitre_response.json()
 
 #Print Analysis of File
 def fileAnalysis(file_ID):
@@ -185,6 +229,22 @@ def main():
                 hunt_persist()
         else:
             hunt_persist()
+
+    if '-t' in args:
+        t_index = args.index('-t')
+        try:
+            file_path = args[t_index + 1]
+            file_hash = get_hash(file_path)
+            mitre_data = get_mitre_attack_data(file_hash)
+            if mitre_data:
+                if outfile:
+                    with open(outfile, 'a') as f:
+                        sys.stdout = f
+                        display_mitre_techniques(mitre_data)
+                else:
+                    display_mitre_techniques(mitre_data)
+        except IndexError:
+            print("Error: No file specified after -t flag.")
     
     if not flags[0].startswith('-'):
         file = flags[0]
