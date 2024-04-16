@@ -3,6 +3,7 @@ import os
 import hashlib
 import requests
 import subprocess
+import psutil
 
 # WARNING: DO NOT PUSH YOUR APIKEY HERE
 API_KEY = ''
@@ -190,6 +191,18 @@ def fileAnalysis(file_ID):
             break
     return response
 
+def remediate_file(file):
+    print(f"Killing processes...")
+
+    file_path = os.path.basename(file)
+    for process in psutil.process_iter(['pid', 'name']):
+        if process.info['name'] == file_path:
+            process.kill()
+
+    print(f"Remediating file {file}...")
+    os.remove(file_path)
+    print(f"{file} successfully remediated")
+
 def main():
     # Splits command line arguments
     flags = args = sys.argv[1:]
@@ -209,6 +222,7 @@ def main():
         print("-v --verbose             output a diagnostic for the file processed")
         print("-p --persistence         hunt for persistence left behind by an attacker")
         print("-t --attack tactics      lists possible indicators a file is malicious")
+        print("-r --remediate file      removes a file from the machine and kills processes associated")
         sys.exit(1)
     
     # Prints out raw json response
@@ -264,6 +278,11 @@ def main():
                     display_mitre_techniques(mitre_data)
         except IndexError:
             print("Error: No file specified after -t flag.")
+    
+    if '-r' in args:
+        index = args.index('-r')
+        file_path = args[index + 1]
+        remediate_file(file_path)
     
     # Prints parsed file analysis
     if not flags[0].startswith('-'):
