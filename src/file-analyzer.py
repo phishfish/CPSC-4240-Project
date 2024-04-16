@@ -9,6 +9,9 @@ API_KEY = ''
 READ_SIZE = 65536
 
 def get_IP_request(webPage):
+    """
+    Gets a report for an IP address
+    """
     print(f"Retrieving report for IP: {webPage}")
     url = f"https://www.virustotal.com/api/v3/ip_addresses/{webPage}"
     headers = {"x-apikey": API_KEY}
@@ -102,6 +105,9 @@ def display_mitre_techniques(mitre_data):
 
 #Uploading File to VirusTotal
 def uploadFile(fileName):
+    """
+    Uploads a file to VirusTotal
+    """
     url = ""
     file_size = (os.stat(fileName).st_size) / (1024 * 1024)
     if file_size > 32:
@@ -129,6 +135,9 @@ def uploadFile(fileName):
     return response
 
 def hunt_persist():
+    """
+    Hunts for basic persistance mechanisms left behind by an attacker
+    """
     try:
         cron_jobs = subprocess.check_output(['crontab', '-l'], stderr=subprocess.STDOUT, text=True)
         print("Scheduled cron jobs: ")
@@ -164,6 +173,9 @@ def get_mitre_attack_data(calc_hash):
 
 #Print Analysis of File
 def fileAnalysis(file_ID):
+    """
+    Sends a file to be analyzed and returns the response
+    """
     url = "https://www.virustotal.com/api/v3/analyses/" + file_ID
     headers =  {"accept": "application/json", 'x-apikey': API_KEY}
     while True:
@@ -179,13 +191,15 @@ def fileAnalysis(file_ID):
     return response
 
 def main():
+    # Splits command line arguments
     flags = args = sys.argv[1:]
     outfile = None
     if '-f' in flags:
         index = flags.index('-f')
         outfile = flags[index + 1]
         del flags[index:index + 2]
-
+    
+    # Prints info about usage
     if '-h' in flags:
         print("Usage: python3 file-analyzer.py [OPTION] ... FILE")
         print("Analyzer a file for malware using the VirusTotal API")
@@ -196,7 +210,8 @@ def main():
         print("-p --persistence         hunt for persistence left behind by an attacker")
         print("-t --attack tactics      lists possible indicators a file is malicious")
         sys.exit(1)
-
+    
+    # Prints out raw json response
     if '-v' in flags:
         index = flags.index('-v')
         file = flags[index + 1]
@@ -211,6 +226,8 @@ def main():
                 print(analysis_report.json())
         else:
             print(analysis_report.json())
+    
+    # Prints ip info
     if '-i' in flags:
         index = flags.index('-i')
         ip = flags[index + 1]
@@ -221,7 +238,8 @@ def main():
                 get_IP_request(ip)
         else:
             get_IP_request(ip)
-
+    
+    # Prints out persistence on machine
     if '-p' in flags:
         if outfile: 
             with open(outfile, 'a') as f:
@@ -229,7 +247,8 @@ def main():
                 hunt_persist()
         else:
             hunt_persist()
-
+    
+    # Prints MITRE ATT&CK tactics
     if '-t' in args:
         t_index = args.index('-t')
         try:
@@ -246,6 +265,7 @@ def main():
         except IndexError:
             print("Error: No file specified after -t flag.")
     
+    # Prints parsed file analysis
     if not flags[0].startswith('-'):
         file = flags[0]
         response = uploadFile(file)
