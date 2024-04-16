@@ -192,13 +192,6 @@ def fileAnalysis(file_ID):
     return response
 
 def remediate_file(file):
-    print(f"Killing processes...")
-
-    file_path = os.path.basename(file)
-    for process in psutil.process_iter(['pid', 'name']):
-        if process.info['name'] == file:
-            process.kill()
-
     print(f"Remediating file {file}...")
     os.remove(file)
     print(f"{file} successfully remediated")
@@ -222,7 +215,7 @@ def main():
         print("-v --verbose             output a diagnostic for the file processed")
         print("-p --persistence         hunt for persistence left behind by an attacker")
         print("-t --attack tactics      lists possible indicators a file is malicious")
-        print("-r --remediate file      removes a file from the machine and kills processes associated")
+        print("-r --remediate file      removes a file from the machine")
         sys.exit(1)
     
     # Prints out raw json response
