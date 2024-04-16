@@ -196,11 +196,11 @@ def remediate_file(file):
 
     file_path = os.path.basename(file)
     for process in psutil.process_iter(['pid', 'name']):
-        if process.info['name'] == file_path:
+        if process.info['name'] == file:
             process.kill()
 
     print(f"Remediating file {file}...")
-    os.remove(file_path)
+    os.remove(file)
     print(f"{file} successfully remediated")
 
 def main():
