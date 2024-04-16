@@ -3,7 +3,6 @@ import os
 import hashlib
 import requests
 import subprocess
-import psutil
 
 # WARNING: DO NOT PUSH YOUR APIKEY HERE
 API_KEY = ''
