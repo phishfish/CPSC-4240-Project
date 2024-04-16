@@ -154,9 +154,9 @@ def hunt_persist():
     print("Connections and listening ports:")
     print(connections)
 
-    services = subprocess.check_output(['systemctl', 'list-timers'], stderr=subprocess.STDOUT, text=True)
-    print("Services: ")
-    print(services)
+    services = subprocess.run(['systemctl', 'list-units', '--type=service', '--state=running'], capture_output=True, text=True)
+    print("Running services: ")
+    print(services.stdout)
 
 def get_mitre_attack_data(calc_hash):
     """
