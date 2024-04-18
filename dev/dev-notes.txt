@@ -32,6 +32,5 @@ Command line flags for user
 3. "-f" pipe into a different files
 4. "-v" - print everything of the report
 5. No Flags - print summary of the file
-6. "-vendsum" - prints user-friendly summary of vendor analysis
 Possibly check the IPs a file reaches out to and add to risk score based on the risk score given back by IPs communicated to
 >>>>>>> main
