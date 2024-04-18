@@ -24,7 +24,7 @@ pip install hashlib
 pip install requests
 ```
 
-Since this tool uses VirusTotal API, you will need to create an account on VirusTotal and use your given API KEY for this tool to work. You can **insert your API KEY in the file "file-analyzer.py"**. After finding the section of the code in "file-analyzer.py", input your file key in the "API_KEY = '' area.
+Since this tool uses VirusTotal API, you will need to create an account on VirusTotal and use your given API KEY for this tool to work. To create an account on VirusTotal, go to the link: https://www.virustotal.com/gui/join-us. You can **insert your API KEY in the file "file-analyzer.py"**. After finding the section of the code in "file-analyzer.py", input your file key in the "API_KEY = '' area.
 ```Python
 # WARNING: DO NOT PUSH YOUR APIKEY HERE
 API_KEY = ''
